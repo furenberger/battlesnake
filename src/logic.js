@@ -1,73 +1,144 @@
-function info() {
-    console.log("INFO")
-    const response = {
-        apiversion: "1",
-        author: "",
-        color: "#888888",
-        head: "default",
-        tail: "default"
-    }
-    return response
-}
+// const { avoidFoods } = require('./moves/avoidFoods');
+// const { avoidHazards } = require('./moves/avoidHazards');
+
+const { avoid } = require('./moves/avoid');
+const { avoidSnakes } = require('./moves/avoidSnakes');
+const { avoidWalls } = require('./moves/avoidWalls');
+const { avoidYourself } = require('./moves/avoidYourself');
+const { avoidYourNeck } = require('./moves/avoidYourNeck');
+const { combinedSafeMoves } = require('./moves/combinedSafeMoves');
+const { foodFinder } = require('./moves/foodFinder');
+const { visualize } = require('./visualizer');
+const {
+  DEBUG_FOOD, HEALTH_THRESHOLD, MOVES, getRandomInt, GRID_TYPES,
+} = require('./util');
 
 function start(gameState) {
-    console.log(`${gameState.game.id} START`)
+  console.log(`${gameState.game.id} START`);
 }
 
 function end(gameState) {
-    console.log(`${gameState.game.id} END\n`)
+  console.log(`${gameState.game.id} END\n`);
 }
 
+const findNextMove = (health, safeMoves, avoidFoodsMoves, food, myHead) => {
+  // there is only one move, we have to use it
+  if (safeMoves.length <= 1) {
+    return safeMoves;
+  }
+
+  const findNextMoveMoves = JSON.parse(JSON.stringify(safeMoves));
+
+  const flatAvoidFoodMoves = Object.keys(avoidFoodsMoves).filter(
+    (key) => avoidFoodsMoves[key].value === true,
+  );
+  const flatHasFoodMoves = Object.keys(avoidFoodsMoves).filter(
+    (key) => avoidFoodsMoves[key].value === false,
+  );
+
+  // Do you NEED food?
+  if (health > HEALTH_THRESHOLD) {
+    // remove the food from the findNextMoveMoves
+    MOVES.forEach((_move) => {
+      // make sure there is still a safe move after we keep slicing
+      if (findNextMoveMoves.length > 1 && findNextMoveMoves.includes(_move)) {
+        // You found some food at that spot
+        if (!flatAvoidFoodMoves.includes(_move)) {
+          // Remove it - there is food there its unsafe
+          // eslint-disable-next-line no-unused-expressions
+          DEBUG_FOOD ? console.log(`Removing ${_move} due to 🍕`) : '';
+          findNextMoveMoves.splice(findNextMoveMoves.indexOf(_move), 1);
+        }
+      }
+    });
+  } else {
+    // You need to head towards food
+    // eslint-disable-next-line no-unused-expressions
+    DEBUG_FOOD ? console.log('I NEED 🥟🥟🥟') : '';
+
+    // is one of your nearby moves food?
+    if (flatHasFoodMoves.length > 0) {
+      // eslint-disable-next-line no-unused-expressions
+      DEBUG_FOOD ? console.log('I NEED 🌭') : '';
+      return flatHasFoodMoves;
+    }
+    // head in the direction of food
+    return foodFinder(food, myHead, findNextMoveMoves);
+  }
+
+  // eslint-disable-next-line no-unused-expressions
+  DEBUG_FOOD ? console.log({ findNextMoveMoves }) : '';
+  return findNextMoveMoves;
+};
+
 function move(gameState) {
-    let possibleMoves = {
-        up: true,
-        down: true,
-        left: true,
-        right: true
-    }
+  const boardWidth = gameState.board.width;
+  const boardHeight = gameState.board.height;
 
-    // Step 0: Don't let your Battlesnake move back on its own neck
-    const myHead = gameState.you.head
-    const myNeck = gameState.you.body[1]
-    if (myNeck.x < myHead.x) {
-        possibleMoves.left = false
-    } else if (myNeck.x > myHead.x) {
-        possibleMoves.right = false
-    } else if (myNeck.y < myHead.y) {
-        possibleMoves.down = false
-    } else if (myNeck.y > myHead.y) {
-        possibleMoves.up = false
-    }
+  const myHead = gameState.you.head;
+  const myBody = gameState.you.body;
+  const myNeck = gameState.you.body[1];
 
-    // TODO: Step 1 - Don't hit walls.
-    // Use information in gameState to prevent your Battlesnake from moving beyond the boundaries of the board.
-    // const boardWidth = gameState.board.width
-    // const boardHeight = gameState.board.height
+  const { snakes } = gameState.board;
+  const { hazards } = gameState.board;
+  const { health } = gameState.you;
+  const { food } = gameState.board;
 
-    // TODO: Step 2 - Don't hit yourself.
-    // Use information in gameState to prevent your Battlesnake from colliding with itself.
-    // const mybody = gameState.you.body
+  visualize(gameState);
 
-    // TODO: Step 3 - Don't collide with others.
-    // Use information in gameState to prevent your Battlesnake from colliding with others.
+  // Don't let your Battlesnake move back on its own neck
+  const avoidYourNeckMoves = avoidYourNeck(myNeck, myHead);
 
-    // TODO: Step 4 - Find food.
-    // Use information in gameState to seek out and find food.
+  // Avoid walls
+  const avoidWallsMoves = avoidWalls(myHead, boardHeight, boardWidth);
 
-    // Finally, choose a move from the available safe moves.
-    // TODO: Step 5 - Select a move to make based on strategy, rather than random.
-    const safeMoves = Object.keys(possibleMoves).filter(key => possibleMoves[key])
-    const response = {
-        move: safeMoves[Math.floor(Math.random() * safeMoves.length)],
-    }
+  // Avoid hitting yourself
+  const avoidYourselfMoves = avoidYourself(myBody, myHead);
 
-    console.log(`${gameState.game.id} MOVE ${gameState.turn}: ${response.move}`)
-    return response
+  // Avoid other snakes
+  // const avoidSnakesMoves = avoidSnakes(snakes, myHead);
+  const avoidSnakesMoves = avoid(snakes, GRID_TYPES.SNAKE, myHead);
+
+  // Avoid hazards
+  // const avoidHazardsMoves = avoidHazards(hazards, myHead);
+  const avoidHazardsMoves = avoid(hazards, GRID_TYPES.HAZARD, myHead);
+
+  // Avoid food
+  // const avoidFoodsMoves = avoidFoods(food, myHead);
+  const avoidFoodsMoves = avoid(food, GRID_TYPES.FOOD, myHead);
+
+  // Choose a move from the available safe moves
+  const safeMoves = combinedSafeMoves([
+    avoidWallsMoves,
+    avoidYourNeckMoves,
+    avoidYourselfMoves,
+    avoidSnakesMoves,
+    avoidHazardsMoves,
+  ]);
+
+  // Now with those moves... introduce FOOD
+  const safeFoodMoves = findNextMove(
+    health,
+    safeMoves,
+    avoidFoodsMoves,
+    food,
+    myHead,
+  );
+
+  const rand = getRandomInt(0, safeFoodMoves.length);
+  const response = {
+    move: safeFoodMoves[rand],
+  };
+
+  console.log(`TURN: ${gameState.turn}\nMOVE: ${response.move}\nHEALTH: ${health}`);
+  // if (gameState.turn > 1) {
+  //   process.exit();
+  // }
+  return response;
 }
 
 module.exports = {
-    info: info,
-    start: start,
-    move: move,
-    end: end
-}
+  start,
+  move,
+  end,
+};

@@ -4,6 +4,7 @@
   "description": "A simple Battlesnake written in JavaScript",
   "scripts": {
     "start": "node src/index.js",
+    "start:nodemon": "nodemon src/index.js",
     "test": "jest --silent"
   },
   "repository": {
@@ -17,6 +18,10 @@
     "express": "^4.17.1"
   },
   "devDependencies": {
-    "jest": "^27.0.6"
+    "eslint": "^8.17.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "jest": "^27.0.6",
+    "nodemon": "^2.0.16"
   }
 }
