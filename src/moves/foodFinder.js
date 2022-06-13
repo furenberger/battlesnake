@@ -1,4 +1,16 @@
-const { DEBUG_FOOD } = require('../util');
+const { DEBUG_FOOD, MOVE_TYPES } = require('../util');
+
+const findCloser = (safeMoves, foodFinderMoves, currentClosestFood, myHead, moveA, moveB) => {
+  if (safeMoves.includes(moveA) && safeMoves.includes(moveB)) {
+    const upRemainingDistance = Math.abs(myHead.y + 1 - currentClosestFood.y);
+    const downRemainingDistance = Math.abs(myHead.y - 1 - currentClosestFood.y);
+    if (downRemainingDistance > upRemainingDistance) {
+      foodFinderMoves.add(moveA);
+    } else {
+      foodFinderMoves.add(moveB);
+    }
+  }
+};
 
 const foodFinder = (food, myHead, safeMoves) => {
   // there is no food
@@ -22,67 +34,13 @@ const foodFinder = (food, myHead, safeMoves) => {
 
   // Now with ther closest food find the best move
   const foodFinderMoves = new Set();
-  // check all the safeMoves for which one would make you go closer the food
-  // Compare Up to Down
-  if (safeMoves.includes('up') && safeMoves.includes('down')) {
-    const upRemainingDistance = Math.abs(myHead.y + 1 - currentClosestFood.y);
-    const downRemainingDistance = Math.abs(myHead.y - 1 - currentClosestFood.y);
-    if (downRemainingDistance > upRemainingDistance) {
-      foodFinderMoves.add('up');
-    } else {
-      foodFinderMoves.add('down');
-    }
-  }
-  // Compare Left to Right
-  if (safeMoves.includes('left') && safeMoves.includes('right')) {
-    const leftRemainingDistance = Math.abs(myHead.x - 1 - currentClosestFood.x);
-    const rightRemainingDistance = Math.abs(myHead.x + 1 - currentClosestFood.x);
-    if (rightRemainingDistance > leftRemainingDistance) {
-      foodFinderMoves.add('left');
-    } else {
-      foodFinderMoves.add('right');
-    }
-  }
+  findCloser(safeMoves, foodFinderMoves, currentClosestFood, myHead, MOVE_TYPES.UP, MOVE_TYPES.DOWN);
+  findCloser(safeMoves, foodFinderMoves, currentClosestFood, myHead, MOVE_TYPES.UP, MOVE_TYPES.LEFT);
+  findCloser(safeMoves, foodFinderMoves, currentClosestFood, myHead, MOVE_TYPES.UP, MOVE_TYPES.RIGHT);
+  findCloser(safeMoves, foodFinderMoves, currentClosestFood, myHead, MOVE_TYPES.DOWN, MOVE_TYPES.LEFT);
+  findCloser(safeMoves, foodFinderMoves, currentClosestFood, myHead, MOVE_TYPES.DOWN, MOVE_TYPES.RIGHT);
+  findCloser(safeMoves, foodFinderMoves, currentClosestFood, myHead, MOVE_TYPES.LEFT, MOVE_TYPES.RIGHT);
 
-  if (safeMoves.includes('left') && safeMoves.includes('up')) {
-    const leftRemainingDistance = Math.abs(myHead.x - 1 - currentClosestFood.x);
-    const upRemainingDistance = Math.abs(myHead.y + 1 - currentClosestFood.y);
-    if (upRemainingDistance > leftRemainingDistance) {
-      foodFinderMoves.add('left');
-    } else {
-      foodFinderMoves.add('up');
-    }
-  }
-
-  if (safeMoves.includes('right') && safeMoves.includes('up')) {
-    const rightRemainingDistance = Math.abs(myHead.x + 1 - currentClosestFood.x);
-    const upRemainingDistance = Math.abs(myHead.y + 1 - currentClosestFood.y);
-    if (upRemainingDistance > rightRemainingDistance) {
-      foodFinderMoves.add('right');
-    } else {
-      foodFinderMoves.add('up');
-    }
-  }
-
-  if (safeMoves.includes('left') && safeMoves.includes('down')) {
-    const leftRemainingDistance = Math.abs(myHead.x - 1 - currentClosestFood.x);
-    const downRemainingDistance = Math.abs(myHead.y - 1 - currentClosestFood.y);
-    if (downRemainingDistance > leftRemainingDistance) {
-      foodFinderMoves.add('left');
-    } else {
-      foodFinderMoves.add('down');
-    }
-  }
-
-  if (safeMoves.includes('right') && safeMoves.includes('down')) {
-    const rightRemainingDistance = Math.abs(myHead.x + 1 - currentClosestFood.x);
-    const downRemainingDistance = Math.abs(myHead.y - 1 - currentClosestFood.y);
-    if (downRemainingDistance > rightRemainingDistance) {
-      foodFinderMoves.add('right');
-    } else {
-      foodFinderMoves.add('down');
-    }
-  }
   // eslint-disable-next-line no-unused-expressions
   DEBUG_FOOD ? console.log({ foodFinderMoves }) : '';
   return [...foodFinderMoves];

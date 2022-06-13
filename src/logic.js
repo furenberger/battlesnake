@@ -1,16 +1,15 @@
-// const { avoidFoods } = require('./moves/avoidFoods');
-// const { avoidHazards } = require('./moves/avoidHazards');
-
-const { avoid } = require('./moves/avoid');
-const { avoidSnakes } = require('./moves/avoidSnakes');
-const { avoidWalls } = require('./moves/avoidWalls');
-const { avoidYourself } = require('./moves/avoidYourself');
-const { avoidYourNeck } = require('./moves/avoidYourNeck');
-const { combinedSafeMoves } = require('./moves/combinedSafeMoves');
+const { avoidFoods } = require('./moves/avoidFoods');
+// const { avoidWalls } = require('./moves/avoidWalls');
+// const { avoidYourself } = require('./moves/avoidYourself');
+// const { avoidYourNeck } = require('./moves/avoidYourNeck');
+// const { combinedSafeMoves } = require('./moves/combinedSafeMoves');
+const { getSafeMoves } = require('./moves/getSafeMoves');
 const { foodFinder } = require('./moves/foodFinder');
 const { visualize } = require('./visualizer');
+const { floodFill } = require('./moves/floodFill');
+
 const {
-  DEBUG_FOOD, HEALTH_THRESHOLD, MOVES, getRandomInt, GRID_TYPES,
+  DEBUG_FOOD, HEALTH_THRESHOLD, MOVES, getRandomInt, GRID_TYPES, calcuateMove,
 } = require('./util');
 
 function start(gameState) {
@@ -72,49 +71,59 @@ const findNextMove = (health, safeMoves, avoidFoodsMoves, food, myHead) => {
 };
 
 function move(gameState) {
-  const boardWidth = gameState.board.width;
-  const boardHeight = gameState.board.height;
+  // const boardWidth = gameState.board.width;
+  // const boardHeight = gameState.board.height;
 
   const myHead = gameState.you.head;
-  const myBody = gameState.you.body;
-  const myNeck = gameState.you.body[1];
+  // const myBody = gameState.you.body;
+  // const myNeck = gameState.you.body[1];
 
-  const { snakes } = gameState.board;
-  const { hazards } = gameState.board;
+  // const { snakes } = gameState.board;
+  // const { hazards } = gameState.board;
   const { health } = gameState.you;
   const { food } = gameState.board;
 
-  visualize(gameState);
+  const gridVisualized = visualize(gameState);
 
-  // Don't let your Battlesnake move back on its own neck
-  const avoidYourNeckMoves = avoidYourNeck(myNeck, myHead);
+  // // Don't let your Battlesnake move back on its own neck
+  // const avoidYourNeckMoves = avoidYourNeck(myNeck, myHead);
 
-  // Avoid walls
-  const avoidWallsMoves = avoidWalls(myHead, boardHeight, boardWidth);
+  // // Avoid walls
+  // const avoidWallsMoves = avoidWalls(myHead, boardHeight, boardWidth);
 
-  // Avoid hitting yourself
-  const avoidYourselfMoves = avoidYourself(myBody, myHead);
+  // // Avoid hitting yourself
+  // const avoidYourselfMoves = avoidYourself(myBody, myHead);
 
-  // Avoid other snakes
-  // const avoidSnakesMoves = avoidSnakes(snakes, myHead);
-  const avoidSnakesMoves = avoid(snakes, GRID_TYPES.SNAKE, myHead);
+  // // Avoid other snakes
+  // // const avoidSnakesMoves = avoidSnakes(snakes, myHead);
+  // const avoidSnakesMoves = avoid(snakes, GRID_TYPES.SNAKE, myHead);
 
-  // Avoid hazards
-  // const avoidHazardsMoves = avoidHazards(hazards, myHead);
-  const avoidHazardsMoves = avoid(hazards, GRID_TYPES.HAZARD, myHead);
+  // // Avoid hazards
+  // // const avoidHazardsMoves = avoidHazards(hazards, myHead);
+  // const avoidHazardsMoves = avoid(hazards, GRID_TYPES.HAZARD, myHead);
+
+  // // Choose a move from the available safe moves
+  // const safeMoves = combinedSafeMoves([
+  //   avoidWallsMoves,
+  //   avoidYourNeckMoves,
+  //   avoidYourselfMoves,
+  //   avoidSnakesMoves,
+  //   avoidHazardsMoves,
+  // ]);
+  const safeMoves = getSafeMoves(gameState, myHead);
+
+  safeMoves.forEach((_safeMove) => {
+    console.log(
+      'For ',
+      _safeMove,
+      ' there are ',
+      floodFill(calcuateMove(myHead.x, myHead.y, _safeMove), gridVisualized, gameState).flood,
+      ' space',
+    );
+  });
 
   // Avoid food
-  // const avoidFoodsMoves = avoidFoods(food, myHead);
-  const avoidFoodsMoves = avoid(food, GRID_TYPES.FOOD, myHead);
-
-  // Choose a move from the available safe moves
-  const safeMoves = combinedSafeMoves([
-    avoidWallsMoves,
-    avoidYourNeckMoves,
-    avoidYourselfMoves,
-    avoidSnakesMoves,
-    avoidHazardsMoves,
-  ]);
+  const avoidFoodsMoves = avoidFoods(food, myHead);
 
   // Now with those moves... introduce FOOD
   const safeFoodMoves = findNextMove(

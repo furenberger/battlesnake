@@ -1,7 +1,7 @@
-const { MOVES } = require('../util');
+const { MOVES, MOVE_TYPES } = require('../util');
 
 const combinedSafeMoves = (movesArray) => {
-  const safeMoves = ['up', 'down', 'left', 'right'];
+  const safeMoves = [MOVE_TYPES.UP, MOVE_TYPES.DOWN, MOVE_TYPES.LEFT, MOVE_TYPES.RIGHT];
 
   movesArray.forEach((_moveArray) => {
     const currentSafeMoves = Object.keys(_moveArray).filter(
