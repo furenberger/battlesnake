@@ -1,4 +1,6 @@
-const { initMoves, DEBUG } = require('../util');
+const debug = require('debug')('bs:moves:avoidHazards');
+
+const { initMoves } = require('../../util');
 
 const avoidHazards = (hazards, myHead) => {
   const avoidHazardsMoves = JSON.parse(JSON.stringify(initMoves));
@@ -20,8 +22,7 @@ const avoidHazards = (hazards, myHead) => {
     }
   });
 
-  // eslint-disable-next-line no-unused-expressions
-  DEBUG ? console.log({ avoidHazardsMoves }) : '';
+  debug({ avoidHazardsMoves });
   return avoidHazardsMoves;
 };
 

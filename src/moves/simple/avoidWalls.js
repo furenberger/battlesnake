@@ -1,4 +1,5 @@
-const { initMoves, DEBUG } = require('../util');
+const debug = require('debug')('bs:moves:avoidWalls');
+const { initMoves } = require('../../util');
 
 const avoidWalls = (myHead, boardHeight, boardWidth) => {
   const avoidWallsMoves = JSON.parse(JSON.stringify(initMoves));
@@ -19,8 +20,7 @@ const avoidWalls = (myHead, boardHeight, boardWidth) => {
     avoidWallsMoves.right.value = false;
   }
 
-  // eslint-disable-next-line no-unused-expressions
-  DEBUG ? console.log({ avoidWallsMoves }) : '';
+  debug({ avoidWallsMoves });
   return avoidWallsMoves;
 };
 

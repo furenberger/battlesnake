@@ -1,18 +1,6 @@
-const { MY_SNAKE } = require('./util');
-
-const EMPTY = '⬜️';
-
-const HEAD = '🐍';
-const BODY = '❌';
-const TAIL = '⭕️';
-
-const YOU_HEAD = '🐉';
-const YOU_BODY = '🦴';
-const YOU_TAIL = '💩';
-
-const FOOD_CELL = '🌭';
-const WALL_CELL = '🧱';
-const HAZARD_CELL = '☢️';
+const {
+  MY_SNAKE, VISUALIZE_TYPES, SAFETY_TYPES, GRID_VIEWER, SAFE_VIEWER,
+} = require('./util');
 
 const buildInitialGrid = (width, height) => {
   const grid = [];
@@ -20,7 +8,9 @@ const buildInitialGrid = (width, height) => {
     const row = [];
     for (let y = 0; y < height; y += 1) {
       // row.push(`(x:${x}, y:${y})`);
-      row.push({ x, y, cell: EMPTY });
+      row.push({
+        x, y, cell: VISUALIZE_TYPES.EMPTY, safe: SAFETY_TYPES.SAFE,
+      });
     }
     grid.push(row);
   }
@@ -29,18 +19,18 @@ const buildInitialGrid = (width, height) => {
 
 const addSnake = (grid, snake) => {
   // console.log(JSON.parse(JSON.stringify(snake)));
-  let head = HEAD;
-  let body = BODY;
-  let tail = TAIL;
+  let head = VISUALIZE_TYPES.HEAD;
+  let body = VISUALIZE_TYPES.BODY;
+  let tail = VISUALIZE_TYPES.TAIL;
 
   const snakeBody = snake.body;
   const snakeHead = snake.head;
   const snakeName = snake.name;
   const snakeLength = snake.length;
   if (snakeName === MY_SNAKE) {
-    head = YOU_HEAD;
-    body = YOU_BODY;
-    tail = YOU_TAIL;
+    head = VISUALIZE_TYPES.YOU_HEAD;
+    body = VISUALIZE_TYPES.YOU_BODY;
+    tail = VISUALIZE_TYPES.YOU_TAIL;
   }
 
   // draw the whole snake
@@ -56,35 +46,70 @@ const addSnake = (grid, snake) => {
       // eslint-disable-next-line no-param-reassign
       grid[bodyPart.x][bodyPart.y].cell = body;
     }
+    // eslint-disable-next-line no-param-reassign
+    grid[bodyPart.x][bodyPart.y].safe = SAFETY_TYPES.UNSAFE;
   });
 
   // console.log(JSON.parse(JSON.stringify(grid)));
   return grid;
 };
 
+const addThing = (grid, thing, filler, isSafe) => {
+  // eslint-disable-next-line no-param-reassign
+  grid[thing.x][thing.y].cell = filler;
+
+  // eslint-disable-next-line no-param-reassign
+  grid[thing.x][thing.y].safe = isSafe;
+
+  // console.log(JSON.parse(JSON.stringify(grid)));
+  return grid;
+};
+
 const gridViewer = (grid, height, width) => {
-  let viewer = '';
-  for (let y = height - 1; y >= 0; y -= 1) {
-    for (let x = 0; x < width; x += 1) {
-      viewer += grid[x][y].cell;
+  if (GRID_VIEWER === 'true') {
+    let viewer = '';
+    for (let y = height - 1; y >= 0; y -= 1) {
+      for (let x = 0; x < width; x += 1) {
+        viewer += grid[x][y].cell;
+      }
+      viewer += '\n';
     }
-    viewer += '\n';
+    console.log(JSON.parse(JSON.stringify(viewer)));
   }
-  console.log(JSON.parse(JSON.stringify(viewer)));
+};
+
+const safeViewer = (grid, height, width) => {
+  if (SAFE_VIEWER === 'true') {
+    let viewer = '';
+    for (let y = height - 1; y >= 0; y -= 1) {
+      for (let x = 0; x < width; x += 1) {
+        viewer += grid[x][y].safe;
+      }
+      viewer += '\n';
+    }
+    console.log(JSON.parse(JSON.stringify(viewer)));
+  }
 };
 
 const visualize = (gameState) => {
   const boardWidth = gameState.board.width;
   const boardHeight = gameState.board.height;
 
-  const initialGrid = buildInitialGrid(boardWidth, boardHeight);
-  // const gridWithMySnake = addSnake(initialGrid, gameState.you);
-  // gridViewer(gridWithMySnake);
+  const grid = buildInitialGrid(boardWidth, boardHeight);
   gameState.board.snakes.forEach((snake) => {
-    addSnake(initialGrid, snake);
+    addSnake(grid, snake);
   });
 
-  gridViewer(initialGrid, boardHeight, boardWidth);
+  gameState.board.food.forEach((food) => {
+    addThing(grid, food, VISUALIZE_TYPES.FOOD_CELL, SAFETY_TYPES.SAFE);
+  });
+
+  gameState.board.hazards.forEach((hazard) => {
+    addThing(grid, hazard, VISUALIZE_TYPES.HAZARD_CELL, SAFETY_TYPES.UNSAFE);
+  });
+
+  gridViewer(grid, boardHeight, boardWidth);
+  return grid;
 };
 
-module.exports = { visualize };
+module.exports = { visualize, safeViewer, gridViewer };

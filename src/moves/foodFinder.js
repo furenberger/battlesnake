@@ -1,90 +1,96 @@
-const { DEBUG_FOOD } = require('../util');
+const debug = require('debug')('bs:moves:foodFinder');
+const { calcuateMove, MOVE_TYPES, getRandomInt } = require('../util');
+const { floodFill } = require('./floodFill');
 
-const foodFinder = (food, myHead, safeMoves) => {
+// eslint-disable-next-line no-param-reassign
+const foodFinder = (food, myHead, safeMoves, gridVisualized) => {
   // there is no food
   if (food.length < 1) {
     return safeMoves;
   }
 
-  // pick a food that is close to you, it doesnt matter it will get closer as you move
-  const foodDistance = JSON.parse(JSON.stringify(food));
-  let currentClosestFood = food.slice(0, 1)[0];
-  currentClosestFood.totalDistance = Math.abs(myHead.y - currentClosestFood.y)
-                                      + Math.abs(myHead.x - currentClosestFood.x);
+  // Look at the foods, if they are safe and find the closest ones
+  const foodDistance = food.map((f) => {
+    let fastestDirection;
+    let distance = 100000000000000000;
 
-  foodDistance.forEach((f, index) => {
-    const totalDistance = Math.abs(myHead.x - f.x) + Math.abs(myHead.y - f.y);
-    if (totalDistance < currentClosestFood.totalDistance) {
-      currentClosestFood = foodDistance.splice(index, 1);
-      currentClosestFood.totalDistance = totalDistance;
-    }
+    // get the best direction for this food
+    Object.keys(MOVE_TYPES).forEach((moveType) => {
+      const direction = MOVE_TYPES[moveType];
+
+      if (safeMoves[direction]) {
+        const moveInDirection = calcuateMove(myHead.x, myHead.y, direction);
+        const moveDistance = Math.abs(moveInDirection.x - f.x) + Math.abs(moveInDirection.y - f.y);
+
+        if (!fastestDirection || moveDistance < distance) {
+          distance = moveDistance;
+          fastestDirection = direction;
+        }
+      }
+    });
+
+    const foodFinderMove = {
+      move: fastestDirection,
+      totalDistance: Math.abs(myHead.x - f.x) + Math.abs(myHead.y - f.y),
+      x: JSON.parse(JSON.stringify(f.x)),
+      y: JSON.parse(JSON.stringify(f.y)),
+
+    };
+    return foodFinderMove;
   });
 
-  // Now with ther closest food find the best move
-  const foodFinderMoves = new Set();
-  // check all the safeMoves for which one would make you go closer the food
-  // Compare Up to Down
-  if (safeMoves.includes('up') && safeMoves.includes('down')) {
-    const upRemainingDistance = Math.abs(myHead.y + 1 - currentClosestFood.y);
-    const downRemainingDistance = Math.abs(myHead.y - 1 - currentClosestFood.y);
-    if (downRemainingDistance > upRemainingDistance) {
-      foodFinderMoves.add('up');
-    } else {
-      foodFinderMoves.add('down');
-    }
-  }
-  // Compare Left to Right
-  if (safeMoves.includes('left') && safeMoves.includes('right')) {
-    const leftRemainingDistance = Math.abs(myHead.x - 1 - currentClosestFood.x);
-    const rightRemainingDistance = Math.abs(myHead.x + 1 - currentClosestFood.x);
-    if (rightRemainingDistance > leftRemainingDistance) {
-      foodFinderMoves.add('left');
-    } else {
-      foodFinderMoves.add('right');
-    }
-  }
+  // now you may have more than one direction (because there are multiple pieces of food)
+  // filter to the shortest one
+  const filteredFoodDistance = Object.values(foodDistance).reduce((closestFoods, fd) => {
+    // Look up current distance for this food
+    const closestFood = closestFoods[fd.move];
+    if (!closestFood || (fd.totalDistance < closestFood.totalDistance)) {
+      let what = 'nothing';
+      if (closestFood) {
+        what = closestFood.totalDistance;
+      }
+      debug('this one is closer', fd.totalDistance, ' is closer than ', what);
+      // this should already be a safe move, our original list in this function filtered for that
 
-  if (safeMoves.includes('left') && safeMoves.includes('up')) {
-    const leftRemainingDistance = Math.abs(myHead.x - 1 - currentClosestFood.x);
-    const upRemainingDistance = Math.abs(myHead.y + 1 - currentClosestFood.y);
-    if (upRemainingDistance > leftRemainingDistance) {
-      foodFinderMoves.add('left');
-    } else {
-      foodFinderMoves.add('up');
-    }
-  }
+      // eslint-disable-next-line no-param-reassign
+      closestFoods[fd.move] = JSON.parse(JSON.stringify(fd));
 
-  if (safeMoves.includes('right') && safeMoves.includes('up')) {
-    const rightRemainingDistance = Math.abs(myHead.x + 1 - currentClosestFood.x);
-    const upRemainingDistance = Math.abs(myHead.y + 1 - currentClosestFood.y);
-    if (upRemainingDistance > rightRemainingDistance) {
-      foodFinderMoves.add('right');
-    } else {
-      foodFinderMoves.add('up');
+      // eslint-disable-next-line no-param-reassign
+      closestFoods[fd.move].flood = floodFill({ x: fd.x, y: fd.y }, gridVisualized, null);
     }
-  }
+    return closestFoods;
+  }, {});
 
-  if (safeMoves.includes('left') && safeMoves.includes('down')) {
-    const leftRemainingDistance = Math.abs(myHead.x - 1 - currentClosestFood.x);
-    const downRemainingDistance = Math.abs(myHead.y - 1 - currentClosestFood.y);
-    if (downRemainingDistance > leftRemainingDistance) {
-      foodFinderMoves.add('left');
-    } else {
-      foodFinderMoves.add('down');
+  // And your closest move is
+  debug({ filteredFoodDistance });
+  const closestFood = Object.values(filteredFoodDistance).reduce((a, b) => {
+    const rand = getRandomInt(0, 1);
+    if (a.flood === b.flood) {
+      return rand === 0 ? a : b;
     }
-  }
+    if (a.flood > 2) {
+      if (b.totalDistance > a.totalDistance) {
+        return a;
+      }
+      return b;
+    }
+    return b;
+  });
 
-  if (safeMoves.includes('right') && safeMoves.includes('down')) {
-    const rightRemainingDistance = Math.abs(myHead.x + 1 - currentClosestFood.x);
-    const downRemainingDistance = Math.abs(myHead.y - 1 - currentClosestFood.y);
-    if (downRemainingDistance > rightRemainingDistance) {
-      foodFinderMoves.add('right');
-    } else {
-      foodFinderMoves.add('down');
-    }
-  }
-  // eslint-disable-next-line no-unused-expressions
-  DEBUG_FOOD ? console.log({ foodFinderMoves }) : '';
-  return [...foodFinderMoves];
+  const foodFinderMove = {
+    [closestFood.move]: {
+      move: closestFood.move,
+      value: true,
+      flood: closestFood.flood,
+      coordinates: {
+        x: closestFood.x,
+        y: closestFood.y,
+      },
+    },
+  };
+
+  debug({ foodFinderMove });
+  return foodFinderMove;
 };
+
 module.exports = { foodFinder };

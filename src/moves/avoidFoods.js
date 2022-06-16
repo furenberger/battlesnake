@@ -1,25 +1,39 @@
-const { initMoves, DEBUG } = require('../util');
+const debug = require('debug')('bs:moves:avoidFoods');
 
-const avoidFoods = (food, myHead) => {
+const { initMoves, MOVE_TYPES, calcuateMove } = require('../util');
+const { floodFill } = require('./floodFill');
+
+const avoidFoods = (food, myHead, gridVisualized) => {
   const avoidFoodsMoves = JSON.parse(JSON.stringify(initMoves));
 
   food.forEach((f) => {
     if (myHead.x === f.x - 1 && myHead.y === f.y) {
-      avoidFoodsMoves.right = false;
+      const flood = floodFill({ x: f.x - 1, f: f.y }, gridVisualized, null);
+      if (flood > 3) {
+        avoidFoodsMoves[MOVE_TYPES.RIGHT].value = false;
+      }
     }
     if (myHead.x === f.x + 1 && myHead.y === f.y) {
-      avoidFoodsMoves.left = false;
+      const flood = floodFill({ x: f.x - +1, f: f.y }, gridVisualized, null);
+      if (flood > 3) {
+        avoidFoodsMoves[MOVE_TYPES.LEFT].value = false;
+      }
     }
     if (myHead.y === f.y - 1 && myHead.x === f.x) {
-      avoidFoodsMoves.up = false;
+      const flood = floodFill({ x: f.x, f: f.y - 1 }, gridVisualized, null);
+      if (flood > 3) {
+        avoidFoodsMoves[MOVE_TYPES.UP].value = false;
+      }
     }
     if (myHead.y === f.y + 1 && myHead.x === f.x) {
-      avoidFoodsMoves.down = false;
+      const flood = floodFill({ x: f.x, f: f.y + 1 }, gridVisualized, null);
+      if (flood > 3) {
+        avoidFoodsMoves[MOVE_TYPES.DOWN].value = false;
+      }
     }
   });
 
-  // eslint-disable-next-line no-unused-expressions
-  DEBUG ? console.log({ avoidFoodsMoves }) : '';
+  debug({ avoidFoodsMoves });
   return avoidFoodsMoves;
 };
 
