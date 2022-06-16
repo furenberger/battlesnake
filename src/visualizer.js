@@ -1,4 +1,6 @@
-const { MY_SNAKE, VISUALIZE_TYPES, SAFETY_TYPES } = require('./util');
+const {
+  MY_SNAKE, VISUALIZE_TYPES, SAFETY_TYPES, GRID_VIEWER, SAFE_VIEWER,
+} = require('./util');
 
 const buildInitialGrid = (width, height) => {
   const grid = [];
@@ -64,25 +66,29 @@ const addThing = (grid, thing, filler, isSafe) => {
 };
 
 const gridViewer = (grid, height, width) => {
-  let viewer = '';
-  for (let y = height - 1; y >= 0; y -= 1) {
-    for (let x = 0; x < width; x += 1) {
-      viewer += grid[x][y].cell;
+  if (GRID_VIEWER === 'true') {
+    let viewer = '';
+    for (let y = height - 1; y >= 0; y -= 1) {
+      for (let x = 0; x < width; x += 1) {
+        viewer += grid[x][y].cell;
+      }
+      viewer += '\n';
     }
-    viewer += '\n';
+    console.log(JSON.parse(JSON.stringify(viewer)));
   }
-  console.log(JSON.parse(JSON.stringify(viewer)));
 };
 
 const safeViewer = (grid, height, width) => {
-  let viewer = '';
-  for (let y = height - 1; y >= 0; y -= 1) {
-    for (let x = 0; x < width; x += 1) {
-      viewer += grid[x][y].safe;
+  if (SAFE_VIEWER === 'true') {
+    let viewer = '';
+    for (let y = height - 1; y >= 0; y -= 1) {
+      for (let x = 0; x < width; x += 1) {
+        viewer += grid[x][y].safe;
+      }
+      viewer += '\n';
     }
-    viewer += '\n';
+    console.log(JSON.parse(JSON.stringify(viewer)));
   }
-  console.log(JSON.parse(JSON.stringify(viewer)));
 };
 
 const visualize = (gameState) => {

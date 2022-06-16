@@ -1,4 +1,6 @@
-const { initMoves, DEBUG, MY_SNAKE } = require('../util');
+const debug = require('debug')('bs:moves:avoidSnakes');
+
+const { initMoves, MY_SNAKE } = require('../../util');
 
 const avoidSnakes = (snakes, myHead) => {
   const avoidSnakesMoves = JSON.parse(JSON.stringify(initMoves));
@@ -28,8 +30,7 @@ const avoidSnakes = (snakes, myHead) => {
     });
   });
 
-  // eslint-disable-next-line no-unused-expressions
-  DEBUG ? console.log({ avoidSnakesMoves }) : '';
+  debug({ avoidSnakesMoves });
   return avoidSnakesMoves;
 };
 

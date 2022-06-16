@@ -1,4 +1,6 @@
-const { initMoves, DEBUG } = require('../util');
+const debug = require('debug')('bs:moves:avoidYourNeck');
+
+const { initMoves } = require('../../util');
 
 const avoidYourNeck = (myNeck, myHead) => {
   const avoidYourNeckMoves = JSON.parse(JSON.stringify(initMoves));
@@ -12,8 +14,8 @@ const avoidYourNeck = (myNeck, myHead) => {
   } else if (myNeck.y > myHead.y) {
     avoidYourNeckMoves.up.value = false;
   }
-  // eslint-disable-next-line no-unused-expressions
-  DEBUG ? console.log({ avoidYourNeckMoves }) : '';
+
+  debug({ avoidYourNeckMoves });
   return avoidYourNeckMoves;
 };
 

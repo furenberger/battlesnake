@@ -1,4 +1,5 @@
-const { initMoves, DEBUG } = require('../util');
+const debug = require('debug')('bs:moves:avoidYourself');
+const { initMoves } = require('../../util');
 
 const avoidYourself = (myBody, myHead) => {
   const avoidYourselfMoves = JSON.parse(JSON.stringify(initMoves));
@@ -18,8 +19,7 @@ const avoidYourself = (myBody, myHead) => {
     }
   });
 
-  // eslint-disable-next-line no-unused-expressions
-  DEBUG ? console.log({ avoidYourselfMoves }) : '';
+  debug({ avoidYourselfMoves });
   return avoidYourselfMoves;
 };
 

@@ -34,10 +34,7 @@ function floodFill(move, gridVisualized, gameState) {
     });
   });
   // console.log('floodFill: ', area);
-  return {
-    flood: area,
-    move,
-  };
+  return area;
 }
 
 module.exports = { floodFill };

@@ -1,15 +1,14 @@
+const debug = require('debug')('bs:logic');
+
 const { avoidFoods } = require('./moves/avoidFoods');
-// const { avoidWalls } = require('./moves/avoidWalls');
-// const { avoidYourself } = require('./moves/avoidYourself');
-// const { avoidYourNeck } = require('./moves/avoidYourNeck');
-// const { combinedSafeMoves } = require('./moves/combinedSafeMoves');
+const { avoidSnakeHeads } = require('./moves/avoidSnakeHeads');
 const { getSafeMoves } = require('./moves/getSafeMoves');
 const { foodFinder } = require('./moves/foodFinder');
 const { visualize } = require('./visualizer');
 const { floodFill } = require('./moves/floodFill');
 
 const {
-  DEBUG_FOOD, HEALTH_THRESHOLD, MOVES, getRandomInt, GRID_TYPES, calcuateMove,
+  HEALTH_THRESHOLD, MOVES, MOVE_TYPES, getRandomInt, calcuateMove,
 } = require('./util');
 
 function start(gameState) {
@@ -20,54 +19,55 @@ function end(gameState) {
   console.log(`${gameState.game.id} END\n`);
 }
 
-const findNextMove = (health, safeMoves, avoidFoodsMoves, food, myHead) => {
+const findNextMove = (health, safeMoves, avoidFoodsMoves, food, myHead, gridVisualized) => {
   // there is only one move, we have to use it
-  if (safeMoves.length <= 1) {
+  if (Object.keys(safeMoves).length <= 1) {
+    // debug('THERE IS ONLY ONE MOVE, dont bother doing anything else');
     return safeMoves;
   }
 
-  const findNextMoveMoves = JSON.parse(JSON.stringify(safeMoves));
+  const nextMove = JSON.parse(JSON.stringify(safeMoves));
+  // debug({ findNextMoveMoves: nextMove });
 
-  const flatAvoidFoodMoves = Object.keys(avoidFoodsMoves).filter(
-    (key) => avoidFoodsMoves[key].value === true,
-  );
+  // const flatAvoidFoodMoves = Object.keys(avoidFoodsMoves).filter(
+  //   (key) => avoidFoodsMoves[key].value === true,
+  // );
+
+  // debug('flatAvoidFoodMoves:', flatAvoidFoodMoves);
   const flatHasFoodMoves = Object.keys(avoidFoodsMoves).filter(
     (key) => avoidFoodsMoves[key].value === false,
   );
+  // debug('flatHasFoodMoves:', flatHasFoodMoves);
 
   // Do you NEED food?
-  if (health > HEALTH_THRESHOLD) {
+  if (health > parseInt(HEALTH_THRESHOLD, 10)) {
+    // you dont need it
     // remove the food from the findNextMoveMoves
-    MOVES.forEach((_move) => {
-      // make sure there is still a safe move after we keep slicing
-      if (findNextMoveMoves.length > 1 && findNextMoveMoves.includes(_move)) {
+    Object.keys(MOVE_TYPES).forEach((moveType) => {
+      const direction = MOVE_TYPES[moveType];
+      if (safeMoves[direction]) {
+        // make sure there is still a safe move after we keep deleting
+        if (Object.keys(nextMove).length > 1 && nextMove[direction]) {
         // You found some food at that spot
-        if (!flatAvoidFoodMoves.includes(_move)) {
-          // Remove it - there is food there its unsafe
-          // eslint-disable-next-line no-unused-expressions
-          DEBUG_FOOD ? console.log(`Removing ${_move} due to 🍕`) : '';
-          findNextMoveMoves.splice(findNextMoveMoves.indexOf(_move), 1);
+          if (flatHasFoodMoves.includes(direction)) {
+            // Remove it - there is food there its unsafe
+            debug(`Removing ${direction} due to 🍕`);
+            delete nextMove[direction];
+          }
         }
       }
     });
   } else {
     // You need to head towards food
     // eslint-disable-next-line no-unused-expressions
-    DEBUG_FOOD ? console.log('I NEED 🥟🥟🥟') : '';
+    debug('I NEED 🥟🥟🥟');
 
-    // is one of your nearby moves food?
-    if (flatHasFoodMoves.length > 0) {
-      // eslint-disable-next-line no-unused-expressions
-      DEBUG_FOOD ? console.log('I NEED 🌭') : '';
-      return flatHasFoodMoves;
-    }
     // head in the direction of food
-    return foodFinder(food, myHead, findNextMoveMoves);
+    return foodFinder(food, myHead, nextMove, gridVisualized);
   }
 
-  // eslint-disable-next-line no-unused-expressions
-  DEBUG_FOOD ? console.log({ findNextMoveMoves }) : '';
-  return findNextMoveMoves;
+  debug({ findNextMoveMoves: nextMove });
+  return nextMove;
 };
 
 function move(gameState) {
@@ -85,64 +85,82 @@ function move(gameState) {
 
   const gridVisualized = visualize(gameState);
 
-  // // Don't let your Battlesnake move back on its own neck
-  // const avoidYourNeckMoves = avoidYourNeck(myNeck, myHead);
+  debug(`START TURN: ${gameState.turn} myHead: {${myHead.x},${myHead.y}}`);
 
-  // // Avoid walls
-  // const avoidWallsMoves = avoidWalls(myHead, boardHeight, boardWidth);
-
-  // // Avoid hitting yourself
-  // const avoidYourselfMoves = avoidYourself(myBody, myHead);
-
-  // // Avoid other snakes
-  // // const avoidSnakesMoves = avoidSnakes(snakes, myHead);
-  // const avoidSnakesMoves = avoid(snakes, GRID_TYPES.SNAKE, myHead);
-
-  // // Avoid hazards
-  // // const avoidHazardsMoves = avoidHazards(hazards, myHead);
-  // const avoidHazardsMoves = avoid(hazards, GRID_TYPES.HAZARD, myHead);
-
-  // // Choose a move from the available safe moves
-  // const safeMoves = combinedSafeMoves([
-  //   avoidWallsMoves,
-  //   avoidYourNeckMoves,
-  //   avoidYourselfMoves,
-  //   avoidSnakesMoves,
-  //   avoidHazardsMoves,
-  // ]);
   const safeMoves = getSafeMoves(gameState, myHead);
 
-  safeMoves.forEach((_safeMove) => {
-    console.log(
-      'For ',
-      _safeMove,
-      ' there are ',
-      floodFill(calcuateMove(myHead.x, myHead.y, _safeMove), gridVisualized, gameState).flood,
-      ' space',
-    );
+  // calculate the flood
+  Object.keys(MOVE_TYPES).forEach((moveType) => {
+    const direction = MOVE_TYPES[moveType];
+    if (safeMoves[direction]) {
+      const { x, y } = calcuateMove(myHead.x, myHead.y, direction);
+      const flood = floodFill({ x, y }, gridVisualized, gameState);
+      safeMoves[direction].coordinates.x = x;
+      safeMoves[direction].coordinates.y = y;
+      safeMoves[direction].flood = flood;
+    }
   });
 
-  // Avoid food
-  const avoidFoodsMoves = avoidFoods(food, myHead);
+  // debug('safeMoves: ', safeMoves);
+  // debug('its safe: ', safeMoves[Object.keys(safeMoves)[0]]);
 
-  // Now with those moves... introduce FOOD
-  const safeFoodMoves = findNextMove(
+  // Avoid food
+  const avoidFoodsMoves = avoidFoods(food, myHead, gridVisualized);
+
+  // Avoid other snake heads
+  // TODO LATER
+  // const { snakes } = gameState.board;
+  // const avoidSnakeHeadsMoves = avoidSnakeHeads(snakes, myHead);
+
+  // find the next 'best' move
+  const nextMove = findNextMove(
     health,
     safeMoves,
     avoidFoodsMoves,
     food,
     myHead,
+    gridVisualized,
   );
 
-  const rand = getRandomInt(0, safeFoodMoves.length);
+  // const rand = getRandomInt(0, safeFoodMoves.length);
+
+  let moveSnake = '';
+  if (Object.keys(safeMoves).length === 1) {
+    // there is only one move you have to take it
+    debug('safemove:', safeMoves[Object.keys(safeMoves)[0]].move);
+    moveSnake = safeMoves[Object.keys(safeMoves)[0]].move;
+  }
+
+  if ((!moveSnake || moveSnake === '') && Object.values(nextMove).length > 0) {
+    // Take a good fill
+    const bestFlood = Object.values(nextMove).reduce((a, b) => {
+      const rand = getRandomInt(0, 1);
+      if (a.flood === b.flood) {
+        return rand === 0 ? a : b;
+      }
+      if (a.flood > 2) {
+        if (b.flood < a.flood) {
+          return a;
+        }
+        return b;
+      }
+      return b;
+    });
+    debug({ bestFlood });
+    moveSnake = bestFlood.move;
+  }
+
+  if (!moveSnake || moveSnake === '') {
+    debug('default');
+    moveSnake = 'right';
+  }
+
   const response = {
-    move: safeFoodMoves[rand],
+    move: moveSnake,
   };
 
-  console.log(`TURN: ${gameState.turn}\nMOVE: ${response.move}\nHEALTH: ${health}`);
-  // if (gameState.turn > 1) {
-  //   process.exit();
-  // }
+  debug(`END MOVE: ${gameState.turn}\nMOVE: ${response.move}\nHEALTH: ${health}\n`);
+
   return response;
 }
 

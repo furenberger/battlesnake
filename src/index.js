@@ -1,3 +1,4 @@
+require('dotenv').config()
 const express = require('express');
 const {
   start, move, end,
@@ -8,7 +9,7 @@ const { info } = require('./util');
 const app = express();
 app.use(express.json());
 app.use((req, res, next) => {
-  res.set('Server', 'BattlesnakeOfficial/starter-snake-javascript');
+  res.set('Server', 'snakenberger');
   next();
 });
 
