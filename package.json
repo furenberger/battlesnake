@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node src/index.js",
     "start:nodemon": "DEBUG=bs:logic,bs:moves:foodFinder nodemon src/index.js",
-    "test": "jest --silent"
+    "test": "jest --silent",
+    "zip": "zip -r ../snakenberger.zip *"
   },
   "repository": {
     "type": "git",
