@@ -85,8 +85,8 @@ function info() {
     apiversion: '1',
     author: 'Ryan Furness',
     color: '#bada55',
-    head: 'silly',
-    tail: 'round-bum',
+    head: 'crystal-power',
+    tail: 'crystal-power',
   };
   return response;
 }
